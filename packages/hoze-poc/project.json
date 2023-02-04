@@ -1,0 +1,34 @@
+{
+  "name": "hoze-poc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/hoze-poc/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/hoze-poc",
+        "main": "packages/hoze-poc/src/index.ts",
+        "tsConfig": "packages/hoze-poc/tsconfig.lib.json",
+        "assets": ["packages/hoze-poc/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/hoze-poc/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/vite:test",
+      "outputs": ["coverage/packages/hoze-poc"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/packages/hoze-poc"
+      }
+    }
+  },
+  "tags": []
+}
