@@ -1,5 +1,5 @@
 import express, { json, Request, Response } from 'express';
-import z, { ZodNever, ZodObject } from 'zod';
+import z, { ZodNever, ZodObject, ZodRawShape } from 'zod';
 
 /*
  * Hoze is a library for building type-safe, composable, and testable HTTP APIs.
@@ -7,27 +7,22 @@ import z, { ZodNever, ZodObject } from 'zod';
 
 // Framework code
 
-export type HozeRequest<
-  TPathParameters = never,
-  THeaderParameters = never,
-  TQueryStringParameters = never,
-  TBody = never
-> = {
-  pathParameters: TPathParameters;
-  headerParameters: THeaderParameters;
-  queryStringParameters: TQueryStringParameters;
-  body: TBody;
-};
+const HozeRequestSchema = z.object({
+  pathParameters: z.object({}),
+  queryStringParameters: z.object({}),
+  headerParameters: z.object({}),
+  body: z.unknown(),
+});
 
-export type HozeResponse<
-  TStatusCode extends number = never,
-  THeaders = never,
-  TBody = never
-> = {
-  statusCode: TStatusCode;
-  headers: THeaders;
-  body: TBody;
-};
+type HozeRequest = z.infer<typeof HozeRequestSchema>;
+
+const HozeResponseSchema = z.object({
+  statusCode: z.number(),
+  headers: z.object({}).optional(),
+  body: z.unknown(),
+});
+
+type HozeResponse = z.infer<typeof HozeResponseSchema>;
 
 export type HozeHandler<
   TRequest extends HozeRequest = HozeRequest,
@@ -54,10 +49,10 @@ export type HozeOperation<
   TRequest extends HozeRequest = HozeRequest,
   TResponse extends HozeResponse = HozeResponse
 > = {
-  requestSchema: ZodObject<HozeRequest>;
+  requestSchema: typeof HozeRequestSchema;
   beforeMiddleware: HozeBeforeMiddleware<TRequest>[];
   handler: HozeHandler<TRequest, TResponse>;
-  responseSchema: ZodObject<HozeResponse>;
+  responseSchema: typeof HozeResponseSchema;
   afterMiddleware: HozeAfterMiddleware<TRequest, TResponse>[];
 };
 
@@ -137,25 +132,22 @@ const PetSchema = NewPetSchema.extend({
 
 const PetListSchema = z.array(PetSchema);
 
-const createPetRequestSchema = z.object({
-  pathParameters: z.object({}),
-  queryStringParameters: z.object({}),
-  headerParameters: z.object({}),
+const createPetRequestSchema = HozeRequestSchema.extend({
   body: NewPetSchema,
+  headerParameters: z.object({
+    'content-type': z.literal('application/json'),
+  }),
 });
 
 type CreatePetRequest = z.infer<typeof createPetRequestSchema>;
 
-const createPet200ResponseSchema = z.object({
+const createPet200ResponseSchema = HozeResponseSchema.extend({
   statusCode: z.literal(200),
-  headers: z.never().optional(),
   body: PetSchema,
 });
 
-const createPet405ResponseSchema = z.object({
+const createPet405ResponseSchema = HozeResponseSchema.extend({
   statusCode: z.literal(405),
-  headers: z.never().optional(),
-  body: z.never().optional(),
 });
 
 const createPetResponseSchema = z.union([
@@ -166,7 +158,7 @@ const createPetResponseSchema = z.union([
 type CreatePetResponse = z.infer<typeof createPetResponseSchema>;
 
 const createPetOperation: HozeOperation<CreatePetRequest, CreatePetResponse> = {
-  requestSchema: createPetRequestSchema,
+  requestSchema: createPetRequestSchema as unknown as typeof HozeRequestSchema,
   beforeMiddleware: [],
   handler: async ({ body }) => {
     return {
@@ -178,31 +170,26 @@ const createPetOperation: HozeOperation<CreatePetRequest, CreatePetResponse> = {
       },
     };
   },
-  responseSchema: createPetResponseSchema,
+  responseSchema:
+    createPetResponseSchema as unknown as typeof HozeResponseSchema,
   afterMiddleware: [],
 };
 
-const getPetRequestSchema = z.object({
+const getPetRequestSchema = HozeRequestSchema.extend({
   pathParameters: z.object({
     petId: z.coerce.number().int().min(0),
   }),
-  queryStringParameters: z.object({}),
-  headerParameters: z.object({}),
-  body: z.never(),
 });
 
 type GetPetRequest = z.infer<typeof getPetRequestSchema>;
 
-const getPet200ResponseSchema = z.object({
+const getPet200ResponseSchema = HozeResponseSchema.extend({
   statusCode: z.literal(200),
-  headers: z.never().optional(),
   body: PetSchema,
 });
 
-const getPet404ResponseSchema = z.object({
+const getPet404ResponseSchema = HozeResponseSchema.extend({
   statusCode: z.literal(404),
-  headers: z.never().optional(),
-  body: z.never().optional(),
 });
 
 const getPetResponseSchema = z.union([
@@ -213,9 +200,9 @@ const getPetResponseSchema = z.union([
 type GetPetResponse = z.infer<typeof getPetResponseSchema>;
 
 const getPetOperation: HozeOperation<GetPetRequest, GetPetResponse> = {
-  requestSchema: getPetRequestSchema,
+  requestSchema: getPetRequestSchema as unknown as typeof HozeRequestSchema,
   beforeMiddleware: [],
-  handler: async ({ pathParameters }) => {
+  handler: async ({ pathParameters, body }) => {
     return {
       statusCode: 200,
       body: {
@@ -226,7 +213,7 @@ const getPetOperation: HozeOperation<GetPetRequest, GetPetResponse> = {
       },
     };
   },
-  responseSchema: getPetResponseSchema,
+  responseSchema: getPetResponseSchema as unknown as typeof HozeResponseSchema,
   afterMiddleware: [],
 };
 
