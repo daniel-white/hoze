@@ -22,7 +22,7 @@ export default defineConfig({
   // },
 
   test: {
-    globals: true,
+    globals: false,
     cache: {
       dir: '../../node_modules/.vitest',
     },

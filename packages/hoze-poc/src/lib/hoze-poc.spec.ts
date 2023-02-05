@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+
 import { hozePoc } from './hoze-poc';
 
 describe('hozePoc', () => {

@@ -1,3 +1,3 @@
-export function hozePoc(): string {
-  return 'hoze-poc';
-}
+import z from 'zod';
+
+z.object({});
